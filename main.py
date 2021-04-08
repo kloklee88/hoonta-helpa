@@ -1,6 +1,7 @@
 import discord
 import os
 import requests
+from bs4 import BeautifulSoup
 from keep_alive import keep_alive
 
 #Flask Server to keep repl.it alive
@@ -33,12 +34,17 @@ async def on_message(message):
   if message.content.startswith('!material'):
       material_command = message.content.strip().split(' ', 1)
       await message.channel.send(material_finder(material_command[1]))
+  
+  if message.content.startswith('!monster'):
+      material_command = message.content.strip().split(' ', 1)
+      await message.channel.send(monster_finder(material_command[1]))
 
 def material_finder(material):
   website = 'https://monsterhunterrise.wiki.fextralife.com/'
+  material_edited = material
   if '+' in material:
-    material = material + '+'
-  material_link = material.replace(' ', '+')
+    material_edited = material + '+'
+  material_link = material_edited.replace(' ', '+')
   full_website = website + material_link
   r = requests.get(full_website)
   print(r.status_code)
@@ -46,10 +52,18 @@ def material_finder(material):
     return f'No material named "{material}", did you spell it correctly?'
   return full_website
 
+def monster_finder(monster):
+  page = requests.get('https://game8.co/games/Monster-Hunter-Rise/archives/316137')
+  soup = BeautifulSoup(page.content, 'html.parser')
+  for link in soup.find_all("a", {"class": "a-link"}):
+    if link.text.lower() == monster.lower():
+      return link['href']
+  return f'No small monster named "{monster}", did you spell it correctly?'
+
 def about():
   return "A dedicated Discord bot for Hoontas :crossed_swords:"
 
 def help():
-  return 'Commands:\n**!hoonta about** -- bot description\n**!material [name of material]** -- shows what monster drops the desired material or where to find it'
+  return 'Commands:\n**!hoonta about** -- bot description\n**!material [name of material]** -- shows what monster drops the desired material or where to find it\n**!monster [name of monster]** -- shows map location to find small monsters'
 
 client.run(os.getenv('TOKEN'))
